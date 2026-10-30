@@ -3,7 +3,7 @@
 // sessions, tokenDigest, users. req.document is loaded before authorizeDocument.
 // Read README.md for the complete contract. No solution is included.
 import session from './store.js';
-import users from 'store.js';
+import users from './store.js';
 
 export function authenticate(req, res, next) {
   // TODO: validate Authorization: Bearer <opaque token>, look up the session,
