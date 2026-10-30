@@ -9,6 +9,10 @@ export function authenticate(req, res, next) {
   // validate its lifetime/revocation and current user, then set req.user.
   //const {id} = req.params;
   const bearer = req.headers['Authorization'] ?? req.headers['authorization'];
+  if(!bearer || !bearer.startsWith('Bearer ')){
+    return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+  }
+  
   const token = bearer.split(' ')[1];
 
   if(sessions.has(tokenDigest(token)) == false){
