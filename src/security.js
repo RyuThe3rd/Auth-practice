@@ -2,8 +2,7 @@
 // Helpers/data you may import from ./store.js:
 // sessions, tokenDigest, users. req.document is loaded before authorizeDocument.
 // Read README.md for the complete contract. No solution is included.
-import session from './store.js';
-import users from './store.js';
+import {sessions, users, tokenDigest} from './store.js';
 
 export function authenticate(req, res, next) {
   // TODO: validate Authorization: Bearer <opaque token>, look up the session,
@@ -12,23 +11,29 @@ export function authenticate(req, res, next) {
   const bearer = req.headers['Authorization'] ?? req.headers['authorization'];
   const token = bearer.split(' ')[1];
 
-  const SessionInfo = session.get(token);
+  if(sessions.has(tokenDigest(token)) == false){
+    return res.status(401).json({ error: 'Invalid Token' });
+  }
+
+  const SessionInfo = sessions.get(tokenDigest(token));
 
   if(SessionInfo.revoked == true ){
     return res.status(401).json({ error: 'Invalid Token' });
   }
 
-
-  if(SessionInfo.userId !== req.body.user.id){
-     return res.status(401).json({ error: 'Unauthorized' });
+  let user = null;
+  try{
+   user = users.find(u => u.id === SessionInfo.userId);
+   req.body.user = user;
+  }catch(err){
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if(SessionInfo.expiresAt <= Date.now() ){
     req.body.user.active = false;
-    return res.status(501).json({ error: 'Expired token' });
+    return res.status(401).json({ error: 'Expired token' });
   }
 
-  req.user = users.find(u => u.id === SessionInfo.userId);
   next();
 
 }
