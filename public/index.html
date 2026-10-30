@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auth Lab</title>
+<style>body{font:16px system-ui;background:#101725;color:#e6edf8;max-width:850px;margin:50px auto;padding:20px}section{background:#1c2638;padding:22px;margin:16px 0;border-radius:12px}input,select,button{font:inherit;padding:9px;margin:5px;border-radius:6px;border:1px solid #60708b}button{cursor:pointer;background:#b4f1ce}pre{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#b7c5dc}</style>
+<h1>Auth Lab / Document vault</h1><p>Implement the middleware. Try to break your own rules.</p><small>Local exercise. Protected endpoints return 501 until implemented. Tokens stay in this page's memory and disappear on reload.</small>
+<section><h2>1. Sign in</h2><select id="email"><option>alice@alpha.test</option><option>bob@alpha.test</option><option>vera@alpha.test</option><option>ada@alpha.test</option><option>ben@beta.test</option><option>disabled@alpha.test</option></select><input id="password" type="password" value="Practice-only-123!" aria-label="Password"><button id="login">Login</button><button id="logout">Logout</button></section>
+<section><h2>2. Exercise the API</h2><button id="me">Who am I?</button><button id="admin">List organisation users</button><br><select id="doc"><option>doc-alice</option><option>doc-bob</option><option>doc-vera</option><option>doc-beta</option><option>missing</option></select><button id="read">Read document</button><br><input id="title" value="Updated title" aria-label="Document title"><button id="edit">Change title</button><button id="forget">Forget token locally</button></section>
+<section><h2>Response</h2><pre id="output">Ready.</pre></section><script>
+let token = null;
+const el = id => document.getElementById(id);
+async function call(path, method='GET', body) {
+ try {
+ const response = await fetch('/api'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ const raw=await response.text(); let data; try{data=JSON.parse(raw)}catch{data=raw}
+ el('output').textContent=method+' '+path+' → '+response.status+'\n'+JSON.stringify(data?.token?{token:'[received; hidden]'}:data,null,2);
+ return {ok:response.ok,data};
+ }catch(e){el('output').textContent=e.message;return {ok:false}}
+}
+el('login').onclick=async()=>{token=null;const r=await call('/login','POST',{email:el('email').value,password:el('password').value});if(r.ok)token=r.data.token};
+el('logout').onclick=async()=>{const r=await call('/logout','POST');if(r.ok)token=null};
+el('me').onclick=()=>call('/me');el('admin').onclick=()=>call('/admin/users');
+el('read').onclick=()=>call('/documents/'+encodeURIComponent(el('doc').value));
+el('edit').onclick=()=>call('/documents/'+encodeURIComponent(el('doc').value),'PATCH',{title:el('title').value});
+el('forget').onclick=()=>{token=null;el('output').textContent='Local token forgotten; server session has NOT been revoked.'};
+</script></html>
